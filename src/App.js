@@ -1,25 +1,70 @@
-import logo from './logo.svg';
-import './App.css';
+import { useEffect, useState } from "react";
+import { listarPessoas, criarPessoa } from "./api";
+import PessoaForm from "./components/PessoaForm";
+import PessoaList from "./components/PessoaList";
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+export default function App() {
+    const [pessoas, setPessoas] = useState([]);
+    const [carregando, setCarregando] = useState(true);
+    const [erroLista, setErroLista] = useState("");
+
+    async function carregar() {
+        setErroLista("");
+        setCarregando(true);
+        try {
+            const data = await listarPessoas();
+            setPessoas(data);
+        } catch (e) {
+            setErroLista(e.message || "Falha ao carregar pessoas");
+        } finally {
+            setCarregando(false);
+        }
+    }
+
+    async function handleCriado(novaPessoa) {
+        await criarPessoa(novaPessoa);
+        await carregar(); // recarrega a lista após salvar
+    }
+
+    useEffect(() => {
+        carregar();
+    }, []);
+
+    return (
+        <div style={styles.container}>
+            <h1 style={styles.h1}>Cadastro de Pessoas</h1>
+
+            <div style={styles.grid}>
+                <PessoaForm onCriado={handleCriado} />
+                <PessoaList
+                    pessoas={pessoas}
+                    carregando={carregando}
+                    erro={erroLista}
+                    onReload={carregar}
+                />
+            </div>
+
+            <footer style={styles.footer}>
+                <small>
+                    API: <code>{process.env.REACT_APP_API_URL || "http://localhost:8080"}</code>
+                </small>
+            </footer>
+        </div>
+    );
 }
 
-export default App;
+const styles = {
+    container: {
+        maxWidth: 980,
+        margin: "40px auto",
+        padding: "0 16px",
+        fontFamily: "Inter, system-ui, Arial",
+    },
+    h1: { marginTop: 0, marginBottom: 18 },
+    grid: {
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        gap: 18,
+    },
+    footer: { marginTop: 24, opacity: 0.7 },
+};
